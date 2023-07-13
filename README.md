@@ -1,1 +1,1 @@
-# Ad
+The script uses a CTE named "cte" to derive the columns for new_customers, returning_customers, and new_customer_sales, and calculates the CAC, AOV, and rolling_avg using the LAG function and window functions. The script assumes that your data is ordered by the date column.
