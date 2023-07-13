@@ -1,0 +1,120 @@
+WITH cte AS (
+  SELECT 
+    date, 
+    channel_spend, 
+    CASE WHEN date = (
+      SELECT 
+        MIN(date) 
+      FROM 
+        advertising_data
+    ) THEN new_customers ELSE new_customers - LAG(returning_customers) OVER (
+      ORDER BY 
+        date
+    ) END AS new_customers, 
+    CASE WHEN date = (
+      SELECT 
+        MIN(date) 
+      FROM 
+        advertising_data
+    ) THEN 0 ELSE LAG(returning_customers) OVER (
+      ORDER BY 
+        date
+    ) END AS returning_customers, 
+    CASE WHEN date = (
+      SELECT 
+        MIN(date) 
+      FROM 
+        advertising_data
+    ) THEN new_customer_sales ELSE new_customer_sales - LAG(new_customer_sales) OVER (
+      ORDER BY 
+        date
+    ) END AS new_customer_sales, 
+    channel_spend / (
+      CASE WHEN date = (
+        SELECT 
+          MIN(date) 
+        FROM 
+          advertising_data
+      ) THEN new_customers ELSE new_customers - LAG(returning_customers) OVER (
+        ORDER BY 
+          date
+      ) END
+    ) AS cac, 
+    (
+      CASE WHEN date = (
+        SELECT 
+          MIN(date) 
+        FROM 
+          advertising_data
+      ) THEN new_customer_sales ELSE new_customer_sales - LAG(new_customer_sales) OVER (
+        ORDER BY 
+          date
+      ) END
+    ) / (
+      CASE WHEN date = (
+        SELECT 
+          MIN(date) 
+        FROM 
+          advertising_data
+      ) THEN new_customers ELSE new_customers - LAG(returning_customers) OVER (
+        ORDER BY 
+          date
+      ) END
+    ) AS aov, 
+    AVG(
+      channel_spend / (
+        CASE WHEN date = (
+          SELECT 
+            MIN(date) 
+          FROM 
+            advertising_data
+        ) THEN new_customers ELSE new_customers - LAG(returning_customers) OVER (
+          ORDER BY 
+            date
+        ) END
+      )
+    ) OVER (
+      ORDER BY 
+        date ROWS BETWEEN 6 PRECEDING 
+        AND CURRENT ROW
+    ) / AVG(
+      (
+        CASE WHEN date = (
+          SELECT 
+            MIN(date) 
+          FROM 
+            advertising_data
+        ) THEN new_customer_sales ELSE new_customer_sales - LAG(new_customer_sales) OVER (
+          ORDER BY 
+            date
+        ) END
+      ) / (
+        CASE WHEN date = (
+          SELECT 
+            MIN(date) 
+          FROM 
+            advertising_data
+        ) THEN new_customers ELSE new_customers - LAG(returning_customers) OVER (
+          ORDER BY 
+            date
+        ) END
+      )
+    ) OVER (
+      ORDER BY 
+        date ROWS BETWEEN 6 PRECEDING 
+        AND CURRENT ROW
+    ) AS rolling_avg 
+  FROM 
+    advertising_data
+) 
+SELECT 
+  date, 
+  channel_spend, 
+  new_customers, 
+  returning_customers, 
+  new_customer_sales, 
+  cac, 
+  aov, 
+  rolling_avg 
+FROM 
+  cte;
